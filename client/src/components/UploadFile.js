@@ -1,54 +1,47 @@
-// client/src/components/UploadFile.js
+// UploadFile.js
 import React, { useState } from "react";
-import axios from "axios";
 
 function UploadFile() {
-  const [file, setFile] = useState(null);
-  const [message, setMessage] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState("");
 
-  // 处理文件选择
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+  const handleFileChange = (event) => {
+    setSelectedFile(event.target.files[0]);
   };
 
-  // 处理文件上传
-  const handleUpload = async (e) => {
-    e.preventDefault();
-
-    if (!file) {
-      setMessage("请选择一个文件！");
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setUploadStatus("请选择一个文件");
       return;
     }
 
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", selectedFile);
 
     try {
-      // 使用完整的后端地址确保代理问题不影响上传
-      const response = await axios.post(
-        "http://localhost:5000/api/upload",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      setMessage(response.data.message);
+      const response = await fetch("http://localhost:5001/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setUploadStatus(`文件上传成功！路径：${result.filePath}`);
+      } else {
+        const errorResult = await response.json();
+        setUploadStatus(`文件上传失败：${errorResult.message}`);
+      }
     } catch (error) {
-      console.error("文件上传失败:", error);
-      setMessage("文件上传失败");
+      setUploadStatus(`文件上传失败：${error.message}`);
     }
   };
 
   return (
     <div>
-      <h2>上传 Excel 文件</h2>
-      <form onSubmit={handleUpload}>
-        <input type="file" onChange={handleFileChange} />
-        <button type="submit">上传</button>
-      </form>
-      {message && <p>{message}</p>}
+      <h3>选择上传文件</h3>
+      <input type="file" onChange={handleFileChange} />
+      <button onClick={handleUpload}>上传</button>
+      <p>{uploadStatus}</p>
     </div>
   );
 }
